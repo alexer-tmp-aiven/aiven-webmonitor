@@ -21,35 +21,24 @@ async def check_url(url, pattern=None):
 	try:
 		resp_time, resp = await fetch_url(url)
 	except aiohttp.ClientConnectorError as e:
-		return url, repr(e.os_error)
+		result = (url, repr(e.os_error))
 	except aiohttp.ClientError as e:
-		return url, repr(e)
+		result = (url, repr(e))
+	else:
+		matched = None
+		if pattern is not None:
+			content = await resp.text()
+			matched = bool(re.search(pattern, content))
 
-	matched = None
-	if pattern is not None:
-		content = await resp.text()
-		matched = bool(re.search(pattern, content))
+		result = (url, resp_time, resp.status, matched)
 
-	return url, resp_time, resp.status, matched
-
-async def handle_results(tasks):
-	for task in tasks:
-		print('Done:', await task)
+	print('Done:', result)
 
 async def main(urls):
-	tasks = set()
 	while True:
 		for url in urls:
-			task = asyncio.create_task(check_url(url, 'utf-8'))
-			tasks.add(task)
-		timeout = asyncio.create_task(asyncio.sleep(1))
-		tasks.add(timeout)
-		done = set()
-		while timeout not in done:
-			await handle_results(done)
-			done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-		done.remove(timeout)
-		await handle_results(done)
+			asyncio.create_task(check_url(url, 'utf-8'))
+		await asyncio.sleep(1)
 
 if __name__ == '__main__':
 	import sys
