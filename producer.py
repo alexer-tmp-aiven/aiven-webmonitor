@@ -20,6 +20,8 @@ async def fetch_url(url):
 async def check_url(url, pattern=None):
 	try:
 		resp_time, resp = await fetch_url(url)
+	except aiohttp.ClientConnectorError as e:
+		return url, repr(e.os_error)
 	except aiohttp.ClientError as e:
 		return url, repr(e)
 
