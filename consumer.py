@@ -1,8 +1,11 @@
 import kafka
 import psycopg2
+import psycopg2.extras
 import json
 import time
 from config import KAFKA_OPTS, PG_DSN
+
+BATCH_SIZE = 10
 
 def json_deserialize(value):
 	return json.loads(value.decode('utf-8'))
@@ -13,25 +16,24 @@ def main():
 		'webmonitor',
 		group_id='webmonitor',
 		auto_offset_reset='earliest',
+		enable_auto_commit=False,
 		value_deserializer=json_deserialize,
 		**KAFKA_OPTS
 	)
 
+	batch = []
 	cur = conn.cursor()
 	for msg in consumer:
+		if len(batch) >= BATCH_SIZE:
+			psycopg2.extras.execute_batch(cur, 'SELECT insert_event(%s, %s, %s, %s, %s, %s, %s)', batch)
+			batch = []
+			conn.commit()
+			consumer.commit()
+
 		timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(msg.timestamp/1000))
 		data = msg.value
 		ok = 'error' not in data
-
-		cur.execute('INSERT INTO events (timestamp, url, ok) VALUES (%s, %s, %s) RETURNING id', (timestamp, data['url'], ok))
-		event_id = cur.fetchone()[0]
-
-		if ok:
-			cur.execute('INSERT INTO results (event_id, http_status, response_time, content_ok) VALUES (%s, %s, %s, %s)', (event_id, data['http_status'], data['response_time'], data['content_ok']))
-		else:
-			cur.execute('INSERT INTO errors (event_id, error) VALUES (%s, %s)', (event_id, data['error']))
-
-		conn.commit()
+		batch.append((timestamp, data['url'], ok, data.get('http_status'), data.get('response_time'), data.get('content_ok'), data.get('error')))
 
 if __name__ == '__main__':
 	main()
