@@ -1,14 +1,17 @@
 import aiokafka.helpers
 import aiohttp
+import os
+
+BASEDIR = os.path.dirname(__file__)
 
 PG_DSN = 'host=localhost user=webmonitor password=webmonitor dbname=webmonitor'
 KAFKA_OPTS = {
 	'bootstrap_servers': 'localhost:9092',
 	'security_protocol': 'SSL',
 	'ssl_context': aiokafka.helpers.create_ssl_context(
-		cafile='./ca.pem',
-		certfile='./service.cert',
-		keyfile='./service.key',
+		cafile=os.path.join(BASEDIR, 'ca.pem'),
+		certfile=os.path.join(BASEDIR, 'service.cert'),
+		keyfile=os.path.join(BASEDIR, 'service.key'),
 	)
 }
 
