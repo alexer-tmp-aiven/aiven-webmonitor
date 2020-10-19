@@ -4,7 +4,7 @@ import aiokafka
 import time
 import json
 import re
-from config import KAFKA_OPTS
+from config import KAFKA_OPTS, URLS
 
 TIMEOUT = aiohttp.ClientTimeout(total=10)
 HEADERS = {
@@ -60,14 +60,12 @@ async def main(urls):
 	await producer.start()
 	try:
 		while True:
-			for url in urls:
-				asyncio.create_task(check_url(producer, url, 'utf-8'))
+			for url, pattern in urls:
+				asyncio.create_task(check_url(producer, url, pattern))
 			await asyncio.sleep(1)
 	finally:
 		await producer.stop()
 
 if __name__ == '__main__':
-	import sys
-
-	asyncio.run(main(sys.argv[1:]))
+	asyncio.run(main(URLS))
 

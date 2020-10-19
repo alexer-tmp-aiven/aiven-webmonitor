@@ -11,3 +11,8 @@ KAFKA_OPTS = {
 	)
 }
 
+URLS = [
+	('https://aiven.io/', 'Learn More'),
+	('https://console.aiven.io/', None),
+]
+
