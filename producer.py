@@ -13,6 +13,7 @@ def json_serialize(value):
 	return json.dumps(value).encode('utf-8')
 
 async def fetch_url(config, url):
+	"""Fetch url and record the response time"""
 	# Create a new session for each request, so that all timings include connection establishment
 	async with aiohttp.ClientSession(headers=HEADERS, timeout=config.HTTP_TIMEOUT) as session:
 		start_time = time.time()
@@ -22,6 +23,10 @@ async def fetch_url(config, url):
 			return resp_time, resp
 
 async def check_url(config, producer, url, pattern=None):
+	"""Do a single website check
+
+	Checks response time, optionally validates a pattern, and submits the check result
+	"""
 	timestamp_ms = time.time() * 1000
 
 	try:
@@ -52,6 +57,7 @@ async def check_url(config, producer, url, pattern=None):
 	)
 
 async def main(config):
+	"""Record website availability results to kafka"""
 	producer = aiokafka.AIOKafkaProducer(
 		value_serializer=json_serialize,
 		**config.KAFKA_OPTS

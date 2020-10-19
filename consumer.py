@@ -8,6 +8,7 @@ def json_deserialize(value):
 	return json.loads(value.decode('utf-8'))
 
 def main(config):
+	"""Continuously copy events from kafka to postgresql"""
 	conn = psycopg2.connect(config.PG_DSN)
 	consumer = kafka.KafkaConsumer(
 		'webmonitor',
