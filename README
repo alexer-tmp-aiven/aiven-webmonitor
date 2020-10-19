@@ -16,3 +16,8 @@ When the script finishes, you'll still need to edit the configuration
 file to configure the web sites you want to monitor. The script will
 print the command lines needed to run the programs for you.
 
+Attributions
+============
+
+Documentation of the relevant libraries.
+
