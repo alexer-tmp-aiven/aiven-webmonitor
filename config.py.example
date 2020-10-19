@@ -1,0 +1,12 @@
+import aiokafka.helpers
+
+KAFKA_OPTS = {
+	'bootstrap_servers': 'localhost:9092',
+	'security_protocol': 'SSL',
+	'ssl_context': aiokafka.helpers.create_ssl_context(
+		cafile='./ca.pem',
+		certfile='./service.cert',
+		keyfile='./service.key',
+	)
+}
+

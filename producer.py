@@ -1,12 +1,18 @@
 import asyncio
 import aiohttp
+import aiokafka
 import time
+import json
 import re
+from config import KAFKA_OPTS
 
 TIMEOUT = aiohttp.ClientTimeout(total=10)
 HEADERS = {
 	'User-Agent': 'webmonitor/0.1',
 }
+
+def json_serialize(value):
+	return json.dumps(value).encode('utf-8')
 
 async def fetch_url(url):
 	# Create a new session for each request, so that all timings include connection establishment
@@ -17,28 +23,48 @@ async def fetch_url(url):
 			resp_time = time.time() - start_time
 			return resp_time, resp
 
-async def check_url(url, pattern=None):
+async def check_url(producer, url, pattern=None):
+	timestamp_ms = time.time() * 1000
+
 	try:
 		resp_time, resp = await fetch_url(url)
 	except aiohttp.ClientConnectorError as e:
-		result = (url, repr(e.os_error))
+		result = {'url': url, 'error': repr(e.os_error)}
 	except aiohttp.ClientError as e:
-		result = (url, repr(e))
+		result = {'url': url, 'error': repr(e)}
 	else:
 		matched = None
 		if pattern is not None:
 			content = await resp.text()
 			matched = bool(re.search(pattern, content))
 
-		result = (url, resp_time, resp.status, matched)
+		result = {
+			'url': url,
+			'response_time': resp_time,
+			'http_status': resp.status,
+			'content_ok': matched,
+		}
 
-	print('Done:', result)
+	await producer.send_and_wait(
+		'webmonitor',
+		result,
+		timestamp_ms=timestamp_ms
+	)
 
 async def main(urls):
-	while True:
-		for url in urls:
-			asyncio.create_task(check_url(url, 'utf-8'))
-		await asyncio.sleep(1)
+	producer = aiokafka.AIOKafkaProducer(
+		value_serializer=json_serialize,
+		**KAFKA_OPTS
+	)
+
+	await producer.start()
+	try:
+		while True:
+			for url in urls:
+				asyncio.create_task(check_url(producer, url, 'utf-8'))
+			await asyncio.sleep(1)
+	finally:
+		await producer.stop()
 
 if __name__ == '__main__':
 	import sys
