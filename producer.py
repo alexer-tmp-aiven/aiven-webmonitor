@@ -32,6 +32,8 @@ async def check_url(producer, url, pattern=None):
 		result = {'url': url, 'error': repr(e.os_error)}
 	except aiohttp.ClientError as e:
 		result = {'url': url, 'error': repr(e)}
+	except asyncio.TimeoutError as e:
+		result = {'url': url, 'error': repr(e)}
 	else:
 		matched = None
 		if pattern is not None:
