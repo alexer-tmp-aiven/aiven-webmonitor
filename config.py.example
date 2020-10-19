@@ -1,5 +1,6 @@
 import aiokafka.helpers
 
+PG_DSN = 'host=localhost user=webmonitor password=webmonitor dbname=webmonitor'
 KAFKA_OPTS = {
 	'bootstrap_servers': 'localhost:9092',
 	'security_protocol': 'SSL',
